@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Magic Key — The 6 Doors</title>
+  <style>
+    :root{
+      --bg1:#0f0c29;
+      --bg2:#302b63;
+      --bg3:#24243e;
+      --door1:#ff4e50;
+      --door2:#fc913a;
+      --door3:#f9d423;
+      --door4:#30cfd0;
+      --door5:#5ee7df;
+      --door6:#a18cd1;
+      --gold:#ffd166;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Poppins",sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .wrap{width:960px;max-width:95%;padding:28px;text-align:center}
+    h1{font-size:28px;margin:0;color:#fff;text-shadow:0 0 10px rgba(255,255,255,.5)}
+    p.lead{margin:8px 0 20px;color:#ddd}
+
+    .doors{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+      margin-top:20px;
+    }
+    .door{
+      border-radius:14px;
+      padding:20px;
+      min-height:120px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      position:relative;
+      font-weight:600;
+      color:#fff;
+      text-shadow:0 2px 8px rgba(0,0,0,.5);
+      transition:transform .2s ease,box-shadow .3s ease;
+    }
+    .door:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+    .door.opened{opacity:.5;pointer-events:none;transform:scale(.96)}
+    .door .lock{font-size:32px;margin-bottom:8px}
+
+    /* Golden door (hidden initially, center of page) */
+    .golden-wrap{
+      position:fixed;
+      left:50%;top:50%;
+      transform:translate(-50%,-50%) scale(.9);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .6s ease,transform .6s cubic-bezier(.2,.9,.3,1);
+      z-index:50;
+    }
+    .golden-wrap.visible{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+    .golden{
+      width:240px;height:240px;
+      border-radius:20px;
+      background:radial-gradient(circle at top left,#fff7ae,var(--gold));
+      display:flex;align-items:center;justify-content:center;
+      flex-direction:column;
+      color:#2b2b2b;font-weight:800;
+      box-shadow:0 20px 50px rgba(255,209,102,.4),0 0 25px rgba(255,209,102,.6);
+      text-align:center;
+      cursor:pointer;
+    }
+    .golden .star{font-size:48px;margin-bottom:10px}
+
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:22px;z-index:100}
+    .overlay.show{display:flex}
+    .panel{
+      background:linear-gradient(135deg,#1f1c2c,#928dab);
+      padding:24px;border-radius:16px;
+      max-width:720px;width:100%;
+      color:#fff;text-align:center;
+      box-shadow:0 20px 40px rgba(0,0,0,.5);
+    }
+    .panel h2{margin:0 0 12px;font-size:22px;text-shadow:0 0 8px rgba(255,255,255,.5)}
+    .panel p{margin:10px 0 0;font-size:15px;line-height:1.6}
+    button.btn{
+      margin-top:18px;
+      background:#fff;color:#333;
+      border:none;
+      padding:10px 16px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      transition:background .2s;
+    }
+    button.btn:hover{background:#ffd166;color:#111}
+
+    footer{margin-top:20px;color:#ccc;font-size:13px}
+    @media(max-width:640px){.doors{grid-template-columns:repeat(2,1fr)}.golden{width:180px;height:180px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Magic Key — The 6 Doors</h1>
+    
+    <section class="doors" id="doors"></section>
+    <footer>Made with 💖</footer>
+  </div>
+
+  <!-- Golden door -->
+  <div class="golden-wrap" id="goldenWrap" aria-hidden="true">
+    <div class="golden" id="goldenDoor">
+      <div class="star">✨</div>
+      <div>Golden Door</div>
+      <div style="font-size:13px;margin-top:6px">Open me</div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="overlay" id="overlay">
+    <div class="panel">
+      <h2 id="panelTitle">Surprise</h2>
+      <p id="panelBody">Content</p>
+      <button class="btn" id="closeBtn">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Vibrant door colors
+    const colors = ["var(--door1)","var(--door2)","var(--door3)","var(--door4)","var(--door5)","var(--door6)"];
+    const doorData = [
+      {title:'Door of Laughter', body:'I would tell you a joke about space… but it’s out of this world… literally, it’s floating somewhere. 🌌😂'},
+      {title:'Door of Puzzles', body:'Solve this: I’m light as a feather, yet the strongest person can’t hold me for long. What am I?” — Breath 🌬️'},
+      {title:'Door of Memories', body:'Some memories are tiny treasures 💎 — never forget them.'},
+      {title:'Door of Compliments', body:'Your smile could literally outshine the sun ☀️'},
+      {title:'Door of Mystery', body:'Not all who wander are lost… 🗝️'},
+      {title:'Door of Wishes', body:'If I had 3 wishes, one would be you keep smiling forever 💖'}
+    ];
+
+    const doorsEl = document.getElementById('doors');
+    const overlay = document.getElementById('overlay');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelBody = document.getElementById('panelBody');
+    const closeBtn = document.getElementById('closeBtn');
+    const goldenWrap = document.getElementById('goldenWrap');
+    const goldenDoor = document.getElementById('goldenDoor');
+    let opened = new Set();
+
+    // Create 6 doors
+    doorData.forEach((d,i)=>{
+      const div = document.createElement('div');
+      div.className = 'door';
+      div.style.background = colors[i];
+      div.innerHTML = `<div class="lock">🔒</div><div>${d.title}</div>`;
+      div.addEventListener('click', ()=>openDoor(i,div));
+      doorsEl.appendChild(div);
+    });
+
+    function openDoor(i,el){
+      if(opened.has(i)) return;
+      panelTitle.textContent = doorData[i].title;
+      panelBody.textContent = doorData[i].body;
+      overlay.classList.add('show');
+      el.classList.add('opened');
+      el.querySelector('.lock').textContent = '🔓';
+      opened.add(i);
+      checkAllOpened();
+    }
+
+    closeBtn.addEventListener('click', ()=>overlay.classList.remove('show'));
+    overlay.addEventListener('click', e=>{if(e.target===overlay) overlay.classList.remove('show')});
+
+    function checkAllOpened(){
+      if(opened.size >= doorData.length){
+        setTimeout(()=>{
+          goldenWrap.classList.add('visible');
+          goldenWrap.setAttribute('aria-hidden','false');
+        },400);
+      }
+    }
+
+    function openGolden(){
+      panelTitle.textContent = 'Golden Door — The Secret';
+      panelBody.textContent = 'You found the hidden treasure ✨ The secret is: You make ordinary days feel extraordinary. 🌹';
+      overlay.classList.add('show');
+      // Gone forever after open
+      goldenWrap.classList.remove('visible');
+      goldenWrap.setAttribute('aria-hidden','true');
+    }
+    goldenDoor.addEventListener('click', openGolden);
+    goldenDoor.addEventListener('keydown', e=>{if(e.key==='Enter'||e.key===' ')openGolden()});
+    document.addEventListener('keydown', e=>{if(e.key==='Escape') overlay.classList.remove('show')});
+  </script>
+</body>
+</html>
